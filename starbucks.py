@@ -55,7 +55,7 @@ class Caller():
         
 def simulate(num=10):
     simulation = []
-    for i in range(num):
+    for _ in range(num):
         time = exponential(call_rate(0))
         onHoldQueue = deque() 
         callers = [Caller(time,'NULL', onHoldQueue)]
