@@ -21,12 +21,16 @@ def call_length_rate(t): # average length of calll
     if 6*60 <= t < 9*60:
         return(2)
 
-def walkoutProb(onHoldQueueLength):
+# The likelihood that a caller drops the call because there are too many people ahead of them.
+# This should probably be based on how long they have been waiting instead
+def walkoutProb(onHoldQueueLength): 
     if(np.random.binomial(size=1, n=1, p= 1/(1+e**(-(onHoldQueueLength-6))))):
         return True
     else:
         return False
 
+# Class for a caller
+# Takes current time, previous caller, and the on hold queue as parameters
 class Caller():
     def __init__(self, time, prev_caller, onHoldQueue):
         if(walkoutProb(len(onHoldQueue))):
@@ -83,10 +87,11 @@ for record in simulation:
         if(caller.walkout is False):
             wait_times[int(caller.initial_time/dt)].append(caller.wait_time)
         else:
-            wait_times[int(caller.initial_time/dt)].append(caller.wait_time)
             walkoutCount += 1
 print("Total callers: %d\n" % callerCount)
 print("Walkout count: %d\n" % walkoutCount)
+
+# Plot the average wait time and standard deviation for the wait time for the simulation
 plt.plot([np.average(time) for time in wait_times], color = 'green')
 plt.plot([np.std(time) for time in wait_times])
 plt.show()
