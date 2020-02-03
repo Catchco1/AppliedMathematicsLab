@@ -16,8 +16,8 @@ from collections import deque
 def reservation_call_rate(t): # minutes between callers, on average
     return(3)
 
-def late_call_rate(t):
-    return(5)
+def late_call_rate(t): #prioritize these over the reservation line
+    return(4.1)
 
 def call_length_rate(t): # average length of call
     return(3)
