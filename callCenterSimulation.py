@@ -5,21 +5,22 @@ from math import e
 from collections import deque
 
 
-def call_rate(t): # minutes between callers, on average
-    if 0 <= t < 3*60:
-        return(3)
-    if 3*60 <= t < 6*60:
-        return(3)
-    if 6*60 <= t < 9*60:
-        return(3)
+# def reservation_call_rate(t): # minutes between callers, on average
+#     if 0 <= t < 3*60:
+#         return(3)
+#     if 3*60 <= t < 6*60:
+#         return(3)
+#     if 6*60 <= t < 9*60:
+#         return(3)
 
-def call_length_rate(t): # average length of calll
-    if 0 <= t < 3*60:
-        return(2)
-    if 3*60 <= t < 6*60:
-        return(2.5)
-    if 6*60 <= t < 9*60:
-        return(2)
+def reservation_call_rate(t): # minutes between callers, on average
+    return(3)
+
+def late_call_rate(t):
+    return(5)
+
+def call_length_rate(t): # average length of call
+    return(3)
 
 # The likelihood that a caller drops the call because there are too many people ahead of them.
 # This should probably be based on how long they have been waiting instead
@@ -56,11 +57,11 @@ class Caller():
 def simulate(num=10):
     simulation = []
     for _ in range(num):
-        time = exponential(call_rate(0))
+        time = exponential(reservation_call_rate(0))
         onHoldQueue = deque() 
         callers = [Caller(time,'NULL', onHoldQueue)]
         while time < 9*60:
-            time += exponential(call_rate(time))
+            time += exponential(reservation_call_rate(time))
             if time < 9*60:
                 caller = Caller(time,callers[-1], onHoldQueue)
                 callers.append(caller)
@@ -102,7 +103,7 @@ plt.show()
 #plt.plot([customer.initial_time for customer in customers],\
 #         [customer.wait_time for customer in customers])
 ##plt.plot(t,t**2)
-##plt.plot(t,[call_rate(i) for i in t])
+##plt.plot(t,[reservation_call_rate(i) for i in t])
 #
 #plt.show()
 #
