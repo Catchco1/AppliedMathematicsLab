@@ -30,40 +30,42 @@ def walkoutProb(onHoldQueueLength):
     else:
         return False
 
+class Server():
+    def __init__(self):
+        self.onCall = False
+
 # Class for a caller
 # Takes current time, previous caller, and the on hold queue as parameters
 class Caller():
-    def __init__(self, time, prev_caller, onHoldQueue):
-        if(walkoutProb(len(onHoldQueue))):
-            self.walkout = True
-            self.initial_time = time
-            self.done_time = time
+    def __init__(self, time, prev_caller, onHoldQueue, serverQueue):
+        self.initial_time = time
+        self.call_time = exponential(call_length_rate(time))
+        if prev_caller == 'NULL':
             self.wait_time = 0
+            self.done_time = self.initial_time + self.call_time
         else:
-            self.walkout = False
+            serverQueue.popleft()
             onHoldQueue.append(self)
-            self.initial_time = time
-            self.call_time = exponential(call_length_rate(time))
-            if prev_caller == 'NULL':
-                onHoldQueue.popleft()
-                self.wait_time = 0
-                self.done_time = self.initial_time + self.call_time
-            else:          
-                self.wait_time = max(0,prev_caller.done_time - time)
-                onHoldQueue.popleft()
-                self.done_time = self.initial_time + self.wait_time + self.call_time
+            self.wait_time = max(0,prev_caller.done_time - time)
+            onHoldQueue.popleft()
+            self.done_time = self.initial_time + self.wait_time + self.call_time
+            serverQueue.append([Server()])
             
-        
+numServers = 15
+
 def simulate(num=10):
     simulation = []
     for _ in range(num):
         time = exponential(reservation_call_rate(0))
         onHoldQueue = deque() 
-        callers = [Caller(time,'NULL', onHoldQueue)]
+        serverQueue = deque()
+        for _ in range(numServers):
+            serverQueue.append([Server()])
+        callers = [Caller(time,'NULL', onHoldQueue, serverQueue)]
         while time < 9*60:
             time += exponential(reservation_call_rate(time))
             if time < 9*60:
-                caller = Caller(time,callers[-1], onHoldQueue)
+                caller = Caller(time,callers[-1], onHoldQueue, serverQueue)
                 callers.append(caller)
             # otherwise, we are closed
         
@@ -79,18 +81,13 @@ for i in range(int(9*60/dt)):
     wait_times.append([])
 
 simulation = simulate(1000)
-walkoutCount = 0
 callerCount = 0
 
 for record in simulation:    
     for caller in record:
         callerCount += 1
-        if(caller.walkout is False):
-            wait_times[int(caller.initial_time/dt)].append(caller.wait_time)
-        else:
-            walkoutCount += 1
+        wait_times[int(caller.initial_time/dt)].append(caller.wait_time)
 print("Total callers: %d\n" % callerCount)
-print("Walkout count: %d\n" % walkoutCount)
 
 # Plot the average wait time and standard deviation for the wait time for the simulation
 plt.plot([np.average(time) for time in wait_times], color = 'green')
