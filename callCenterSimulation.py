@@ -38,36 +38,33 @@ class Server():
 # Class for a caller
 # Takes current time, previous caller, and the on hold queue as parameters
 class Caller():
-    def __init__(self, time, prev_caller, onHoldQueue, serverList):
+    def __init__(self, time, prev_caller, serverList):
         self.initial_time = time
         self.call_time = exponential(call_length_rate(time))
         availableServer = min(serverList, key=lambda server: server.busy)
         if prev_caller == 'NULL' or availableServer.busy <= time:
             self.wait_time = 0
             self.done_time = self.initial_time + self.call_time
-            availableServer.busy = time + self.call_time
+            availableServer.busy = self.done_time
         else:
-            onHoldQueue.append(self)
             self.wait_time = availableServer.busy - time
-            onHoldQueue.popleft()
             self.done_time = self.initial_time + self.wait_time + self.call_time
-            availableServer.busy = time + self.call_time
+            availableServer.busy = self.done_time
             
-numServers = 3
+numServers = 5
 
 def simulate(num=10):
     simulation = []
     for _ in range(num):
         time = exponential(reservation_call_rate(0))
-        onHoldQueue = deque() 
         serverList = []
         for _ in range(numServers):
             serverList.append(Server())
-        callers = [Caller(time,'NULL', onHoldQueue, serverList)]
+        callers = [Caller(time,'NULL', serverList)]
         while time < 9*60:
             time += exponential(reservation_call_rate(time))
             if time < 9*60:
-                caller = Caller(time,callers[-1], onHoldQueue, serverList)
+                caller = Caller(time,callers[-1], serverList)
                 callers.append(caller)
             # otherwise, we are closed
         
