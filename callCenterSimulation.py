@@ -23,8 +23,7 @@ def late_call_rate(t): #prioritize these over the reservation line
 def call_length_rate(t): # average length of call
     return(3)
 
-# The likelihood that a caller drops the call because there are too many people ahead of them.
-# This should probably be based on how long they have been waiting instead
+# The likelihood that a caller drops the call because there are too many people ahead of them. This is not currently being used
 def walkoutProb(onHoldQueueLength): 
     if(np.random.binomial(size=1, n=1, p= 1/(1+e**(-(onHoldQueueLength-6))))):
         return True
@@ -56,12 +55,16 @@ numServers = 5
 def simulate(num=10):
     simulation = []
     for _ in range(num):
+        #The first caller
         time = exponential(reservation_call_rate(0))
+        #Create a list of servers that will be answering the phones
         serverList = []
         for _ in range(numServers):
             serverList.append(Server())
+        #Add the first caller to a list to keep track of all the callers in this simulation
         callers = [Caller(time,'NULL', serverList)]
         while time < 9*60:
+            #Advance time only when a new caller calls in
             time += exponential(reservation_call_rate(time))
             if time < 9*60:
                 caller = Caller(time,callers[-1], serverList)
