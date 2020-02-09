@@ -3,6 +3,7 @@ from numpy.random import exponential
 import matplotlib.pyplot as plt
 from math import e
 from collections import deque
+from operator import itemgetter
 
 
 # def reservation_call_rate(t): # minutes between callers, on average
@@ -32,40 +33,41 @@ def walkoutProb(onHoldQueueLength):
 
 class Server():
     def __init__(self):
-        self.onCall = False
+        self.busy = 0
 
 # Class for a caller
 # Takes current time, previous caller, and the on hold queue as parameters
 class Caller():
-    def __init__(self, time, prev_caller, onHoldQueue, serverQueue):
+    def __init__(self, time, prev_caller, onHoldQueue, serverList):
         self.initial_time = time
         self.call_time = exponential(call_length_rate(time))
-        if prev_caller == 'NULL':
+        availableServer = min(serverList, key=lambda server: server.busy)
+        if prev_caller == 'NULL' or availableServer.busy <= time:
             self.wait_time = 0
             self.done_time = self.initial_time + self.call_time
+            availableServer.busy = time + self.call_time
         else:
-            serverQueue.popleft()
             onHoldQueue.append(self)
-            self.wait_time = max(0,prev_caller.done_time - time)
+            self.wait_time = availableServer.busy - time
             onHoldQueue.popleft()
             self.done_time = self.initial_time + self.wait_time + self.call_time
-            serverQueue.append([Server()])
+            availableServer.busy = time + self.call_time
             
-numServers = 15
+numServers = 3
 
 def simulate(num=10):
     simulation = []
     for _ in range(num):
         time = exponential(reservation_call_rate(0))
         onHoldQueue = deque() 
-        serverQueue = deque()
+        serverList = []
         for _ in range(numServers):
-            serverQueue.append([Server()])
-        callers = [Caller(time,'NULL', onHoldQueue, serverQueue)]
+            serverList.append(Server())
+        callers = [Caller(time,'NULL', onHoldQueue, serverList)]
         while time < 9*60:
             time += exponential(reservation_call_rate(time))
             if time < 9*60:
-                caller = Caller(time,callers[-1], onHoldQueue, serverQueue)
+                caller = Caller(time,callers[-1], onHoldQueue, serverList)
                 callers.append(caller)
             # otherwise, we are closed
         
