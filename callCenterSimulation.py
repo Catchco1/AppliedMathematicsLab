@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.random import exponential
 import matplotlib.pyplot as plt
+import pandas as pd
 from math import e
 from collections import deque
 from operator import itemgetter
