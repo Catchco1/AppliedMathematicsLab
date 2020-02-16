@@ -55,7 +55,7 @@ class Caller():
             self.done_time = self.initial_time + self.wait_time + self.call_time
             availableServer.busy = self.done_time
             
-numServers = 10
+numServers = 5
 maxTime = 3915
 filename = 'FormattedData.csv'
 df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2'])
