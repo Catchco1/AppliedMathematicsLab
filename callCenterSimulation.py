@@ -15,8 +15,12 @@ from operator import itemgetter
 #     if 6*60 <= t < 9*60:
 #         return(3)
 
-def reservation_call_rate(t): # minutes between callers, on average
-    return(3)
+def reservation_call_rate(t, df): # minutes between callers, on average
+    averageCallers = df.loc[df['Time2'] <= t].iloc[-1]['Received'] / 15
+    if(averageCallers == 0):
+        return(3)
+    else:
+        return(averageCallers)
 
 def late_call_rate(t): #prioritize these over the reservation line
     return(4.1)
@@ -51,23 +55,27 @@ class Caller():
             self.done_time = self.initial_time + self.wait_time + self.call_time
             availableServer.busy = self.done_time
             
-numServers = 5
+numServers = 10
+maxTime = 3915
+filename = 'FormattedData.csv'
+df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2'])
 
 def simulate(num=10):
     simulation = []
-    for _ in range(num):
+    for i in range(num):
+        print(i)
         #The first caller
-        time = exponential(reservation_call_rate(0))
+        time = exponential(reservation_call_rate(0, df))
         #Create a list of servers that will be answering the phones
         serverList = []
         for _ in range(numServers):
             serverList.append(Server())
         #Add the first caller to a list to keep track of all the callers in this simulation
         callers = [Caller(time,'NULL', serverList)]
-        while time < 9*60:
+        while time < maxTime:
             #Advance time only when a new caller calls in
-            time += exponential(reservation_call_rate(time))
-            if time < 9*60:
+            time += exponential(reservation_call_rate(time, df))
+            if time < maxTime:
                 caller = Caller(time,callers[-1], serverList)
                 callers.append(caller)
             # otherwise, we are closed
@@ -80,10 +88,10 @@ dt = 15
 
 wait_times = []
 
-for i in range(int(9*60/dt)):
+for i in range(int(maxTime/dt)):
     wait_times.append([])
 
-simulation = simulate(1000)
+simulation = simulate(100)
 callerCount = 0
 
 for record in simulation:    
