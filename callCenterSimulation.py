@@ -110,6 +110,9 @@ ax3 = plt.subplot(3,1,3)
 ax1.plot([np.average(len(record)) for record in callersPer15], color='red')
 ax2.plot([np.average(time) for time in wait_times], color = 'green')
 ax3.plot([np.std(time) for time in wait_times])
+# ax1.set_title('Average Number of Callers')
+# ax2.set_title('Average Wait Time')
+# ax3.set_title('Standard Deviation of Wait Time')
 plt.show()
 
 
