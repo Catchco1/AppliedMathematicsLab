@@ -18,9 +18,9 @@ from operator import itemgetter
 def reservation_call_rate(t, df): # minutes between callers, on average
     averageCallers = df.loc[df['Time2'] <= t].iloc[-1]['Received'] / 15
     if(averageCallers == 0):
-        return(3)
+        return(1/3)
     else:
-        return(averageCallers)
+        return(1/averageCallers)
 
 def late_call_rate(t): #prioritize these over the reservation line
     return(4.1)
@@ -55,7 +55,7 @@ class Caller():
             self.done_time = self.initial_time + self.wait_time + self.call_time
             availableServer.busy = self.done_time
             
-numServers = 5
+numServers = 15
 maxTime = 3915
 filename = 'FormattedData.csv'
 df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2'])
@@ -87,22 +87,29 @@ def simulate(num=10):
 dt = 15
 
 wait_times = []
+callersPer15 = []
 
 for i in range(int(maxTime/dt)):
     wait_times.append([])
+    callersPer15.append([])
 
-simulation = simulate(100)
+simulation = simulate(1)
 callerCount = 0
-
-for record in simulation:    
+numCallersPerRecord = []
+for record in simulation: 
     for caller in record:
         callerCount += 1
         wait_times[int(caller.initial_time/dt)].append(caller.wait_time)
+        callersPer15[int(caller.initial_time/dt)].append(caller)
 print("Total callers: %d\n" % callerCount)
 
 # Plot the average wait time and standard deviation for the wait time for the simulation
-plt.plot([np.average(time) for time in wait_times], color = 'green')
-plt.plot([np.std(time) for time in wait_times])
+ax1 = plt.subplot(3,1,1)
+ax2 = plt.subplot(3,1,2)
+ax3 = plt.subplot(3,1,3)
+ax1.plot([np.average(len(record)) for record in callersPer15], color='red')
+ax2.plot([np.average(time) for time in wait_times], color = 'green')
+ax3.plot([np.std(time) for time in wait_times])
 plt.show()
 
 
