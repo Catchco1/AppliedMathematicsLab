@@ -46,7 +46,7 @@ class Caller():
         self.initial_time = time
         self.call_time = exponential(call_length_rate(time))
         availableServer = min(serverList, key=lambda server: server.busy)
-        if prev_caller == 'NULL' or availableServer.busy <= time:
+        if availableServer.busy <= time:
             self.wait_time = 0
             self.done_time = self.initial_time + self.call_time
             availableServer.busy = self.done_time
@@ -122,6 +122,3 @@ plt.show()
 #
 #plt.show()
 #
-
-
-    
