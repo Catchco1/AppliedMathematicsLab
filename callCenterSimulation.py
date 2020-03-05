@@ -93,7 +93,7 @@ for i in range(int(maxTime/dt)):
     wait_times.append([])
     callersPer15.append([])
 
-simulation = simulate(1)
+simulation = simulate(100)
 callerCount = 0
 numCallersPerRecord = []
 for record in simulation: 
@@ -104,12 +104,17 @@ for record in simulation:
 print("Total callers: %d\n" % callerCount)
 
 # Plot the average wait time and standard deviation for the wait time for the simulation
-ax1 = plt.subplot(3,1,1)
-ax2 = plt.subplot(3,1,2)
-ax3 = plt.subplot(3,1,3)
-ax1.plot([np.average(len(record)) for record in callersPer15], color='red')
-ax2.plot([np.average(time) for time in wait_times], color = 'green')
-ax3.plot([np.std(time) for time in wait_times])
+fig, axs =  plt.subplots(nrows=3, ncols=1)
+axs[0] = plt.subplot(3,1,1)
+axs[1] = plt.subplot(3,1,2)
+axs[2] = plt.subplot(3,1,3)
+axs[0].plot([np.average(len(record)) for record in callersPer15], color='red')
+axs[1].plot([np.average(time) for time in wait_times], color = 'green')
+axs[2].plot([np.std(time) for time in wait_times])
+axs[0].title.set_text('Average Number of Callers')
+axs[1].title.set_text('Average Wait Time')
+axs[2].title.set_text('Standard Deviation of Wait Time')
+fig.tight_layout()
 # ax1.set_title('Average Number of Callers')
 # ax2.set_title('Average Wait Time')
 # ax3.set_title('Standard Deviation of Wait Time')
