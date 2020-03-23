@@ -35,17 +35,22 @@ def walkoutProb(onHoldQueueLength):
     else:
         return False
 
+def numServerStations(t, df):
+    return df.loc[df['Time2'] <= t].iloc[-1]['estimate']
+
 class Server():
-    def __init__(self):
+    def __init__(self, station):
         self.busy = 0
+        self.stationNumber = station
 
 # Class for a caller
 # Takes current time, previous caller, and the on hold queue as parameters
 class Caller():
-    def __init__(self, time, prev_caller, serverList):
+    def __init__(self, time, prev_caller, serverList, serverStations):
         self.initial_time = time
         self.call_time = exponential(call_length_rate(time))
-        availableServer = min(serverList, key=lambda server: server.busy)
+        workingServers = filter(lambda server: server.stationNumber <= serverStations, serverList)
+        availableServer = min(workingServers, key=lambda server: server.busy)
         if availableServer.busy <= time:
             self.wait_time = 0
             self.done_time = self.initial_time + self.call_time
@@ -68,15 +73,17 @@ def simulate(num=10):
         time = exponential(reservation_call_rate(0, df))
         #Create a list of servers that will be answering the phones
         serverList = []
-        for _ in range(numServers):
-            serverList.append(Server())
+        for i in range(numServers):
+            serverList.append(Server(i))
         #Add the first caller to a list to keep track of all the callers in this simulation
-        callers = [Caller(time,'NULL', serverList)]
+        serverStations = numServerStations(time, df)
+        callers = [Caller(time,'NULL', serverList, serverStations)]
         while time < maxTime:
             #Advance time only when a new caller calls in
             time += exponential(reservation_call_rate(time, df))
             if time < maxTime:
-                caller = Caller(time,callers[-1], serverList)
+                serverStations = numServerStations(time, df)
+                caller = Caller(time,callers[-1], serverList, serverStations)
                 callers.append(caller)
             # otherwise, we are closed
         
@@ -93,7 +100,7 @@ for i in range(int(maxTime/dt)):
     wait_times.append([])
     callersPer15.append([])
 
-simulation = simulate(100)
+simulation = simulate(1)
 callerCount = 0
 numCallersPerRecord = []
 for record in simulation: 
@@ -104,20 +111,22 @@ for record in simulation:
 print("Total callers: %d\n" % callerCount)
 
 # Plot the average wait time and standard deviation for the wait time for the simulation
-fig, axs =  plt.subplots(nrows=3, ncols=1)
-axs[0] = plt.subplot(3,1,1)
-axs[1] = plt.subplot(3,1,2)
-axs[2] = plt.subplot(3,1,3)
+fig, axs =  plt.subplots(nrows=4, ncols=1)
+axs[0] = plt.subplot(4,1,1)
+axs[1] = plt.subplot(4,1,2)
+axs[2] = plt.subplot(4,1,3)
+axs[3] = plt.subplot(4,1,4)
+
 axs[0].plot([np.average(len(record)) for record in callersPer15], color='red')
 axs[1].plot([np.average(time) for time in wait_times], color = 'green')
 axs[2].plot([np.std(time) for time in wait_times])
+
 axs[0].title.set_text('Average Number of Callers')
 axs[1].title.set_text('Average Wait Time')
 axs[2].title.set_text('Standard Deviation of Wait Time')
+
 fig.tight_layout()
-# ax1.set_title('Average Number of Callers')
-# ax2.set_title('Average Wait Time')
-# ax3.set_title('Standard Deviation of Wait Time')
+
 plt.show()
 
 
