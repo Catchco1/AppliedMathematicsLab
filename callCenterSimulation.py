@@ -6,15 +6,6 @@ from math import e
 from collections import deque
 from operator import itemgetter
 
-
-# def reservation_call_rate(t): # minutes between callers, on average
-#     if 0 <= t < 3*60:
-#         return(3)
-#     if 3*60 <= t < 6*60:
-#         return(3)
-#     if 6*60 <= t < 9*60:
-#         return(3)
-
 def reservation_call_rate(t, df): # minutes between callers, on average
     averageCallers = df.loc[df['Time2'] <= t].iloc[-1]['Received'] / 15
     if(averageCallers == 0):
@@ -22,48 +13,49 @@ def reservation_call_rate(t, df): # minutes between callers, on average
     else:
         return(1/averageCallers)
 
-def late_call_rate(t): #prioritize these over the reservation line
-    return(4.1)
-
 def call_length_rate(t): # average length of call
     return(3)
 
-# The likelihood that a caller drops the call because there are too many people ahead of them. This is not currently being used
-def walkoutProb(onHoldQueueLength): 
-    if(np.random.binomial(size=1, n=1, p= 1/(1+e**(-(onHoldQueueLength-6))))):
-        return True
-    else:
-        return False
+# These are nt being used yet
+# def late_call_rate(t): #prioritize these over the reservation line
+#     return(4.1)
 
-def numServerStations(t, df):
+# The likelihood that a caller drops the call because there are too many people ahead of them. This is not currently being used
+# def walkoutProb(onHoldQueueLength): 
+#     if(np.random.binomial(size=1, n=1, p= 1/(1+e**(-(onHoldQueueLength-6))))):
+#         return True
+#     else:
+#         return False
+
+def assignServerStations(t, df):
     return df.loc[df['Time2'] <= t].iloc[-1]['estimate']
 
 class Server():
     def __init__(self, station):
-        self.busy = 0
+        self.workingUntil = 0
         self.stationNumber = station
 
 # Class for a caller
 # Takes current time, previous caller, and the on hold queue as parameters
 class Caller():
-    def __init__(self, time, prev_caller, serverList, serverStations):
+    def __init__(self, time, prev_caller, serverList, numAvailableServerStations):
         self.initial_time = time
         self.call_time = exponential(call_length_rate(time))
-        workingServers = filter(lambda server: server.stationNumber <= serverStations, serverList)
-        availableServer = min(workingServers, key=lambda server: server.busy)
-        if availableServer.busy <= time:
+        workingServers = filter(lambda server: server.stationNumber <= numAvailableServerStations, serverList)
+        bestServer = min(workingServers, key=lambda server: server.workingUntil)
+        if bestServer.workingUntil <= time:
             self.wait_time = 0
             self.done_time = self.initial_time + self.call_time
-            availableServer.busy = self.done_time
+            bestServer.workingUntil = self.done_time
         else:
-            self.wait_time = availableServer.busy - time
+            self.wait_time = bestServer.workingUntil - time
             self.done_time = self.initial_time + self.wait_time + self.call_time
-            availableServer.busy = self.done_time
+            bestServer.workingUntil = self.done_time
             
-numServers = 15
 maxTime = 3915
 filename = 'FormattedData.csv'
 df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2'])
+maxServerStations = max(df['estimate'])
 
 def simulate(num=10):
     simulation = []
@@ -73,19 +65,18 @@ def simulate(num=10):
         time = exponential(reservation_call_rate(0, df))
         #Create a list of servers that will be answering the phones
         serverList = []
-        for i in range(numServers):
-            serverList.append(Server(i))
+        for j in range(maxServerStations):
+            serverList.append(Server(j))
         #Add the first caller to a list to keep track of all the callers in this simulation
-        serverStations = numServerStations(time, df)
-        callers = [Caller(time,'NULL', serverList, serverStations)]
+        numAvailableServerStations = assignServerStations(time, df)
+        callers = [Caller(time,'NULL', serverList, numAvailableServerStations)]
         while time < maxTime:
             #Advance time only when a new caller calls in
             time += exponential(reservation_call_rate(time, df))
             if time < maxTime:
-                serverStations = numServerStations(time, df)
-                caller = Caller(time,callers[-1], serverList, serverStations)
+                numAvailableServerStations = assignServerStations(time, df)
+                caller = Caller(time,callers[-1], serverList, numAvailableServerStations)
                 callers.append(caller)
-            # otherwise, we are closed
         
         simulation.append(callers)
     return(simulation)
@@ -102,7 +93,6 @@ for i in range(int(maxTime/dt)):
 
 simulation = simulate(1)
 callerCount = 0
-numCallersPerRecord = []
 for record in simulation: 
     for caller in record:
         callerCount += 1
@@ -120,6 +110,7 @@ axs[3] = plt.subplot(4,1,4)
 axs[0].plot([np.average(len(record)) for record in callersPer15], color='red')
 axs[1].plot([np.average(time) for time in wait_times], color = 'green')
 axs[2].plot([np.std(time) for time in wait_times])
+axs[3].plot([np.average(station) for station in df['estimate']], color = 'brown')
 
 axs[0].title.set_text('Average Number of Callers')
 axs[1].title.set_text('Average Wait Time')
@@ -128,14 +119,3 @@ axs[2].title.set_text('Standard Deviation of Wait Time')
 fig.tight_layout()
 
 plt.show()
-
-
-#t = np.linspace(0,16*60,num=16*6)
-#
-#plt.plot([customer.initial_time for customer in customers],\
-#         [customer.wait_time for customer in customers])
-##plt.plot(t,t**2)
-##plt.plot(t,[reservation_call_rate(i) for i in t])
-#
-#plt.show()
-#
