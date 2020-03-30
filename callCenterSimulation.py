@@ -88,10 +88,12 @@ dt = 15
 wait_times = []
 callersPer15 = []
 averageWaitTimes = [0,0,0,0,0]
+waitTimesPer15 = []
 
 for i in range(int(maxTime/dt)):
     wait_times.append([])
     callersPer15.append([])
+    waitTimesPer15.append([0,0,0,0,0])
 
 simulation = simulate(1)
 callerCount = 0
@@ -102,15 +104,30 @@ for record in simulation:
         callersPer15[int(caller.initial_time/dt)].append(caller)
         if caller.wait_time <= 0.167:
             averageWaitTimes[0] += 1
+            waitTimesPer15[int(caller.initial_time/dt)][0] += 1
         elif caller.wait_time <= 2:
             averageWaitTimes[1] += 1
+            waitTimesPer15[int(caller.initial_time/dt)][1] += 1
         elif caller.wait_time <= 3:
             averageWaitTimes[2] += 1
+            waitTimesPer15[int(caller.initial_time/dt)][2] += 1
         elif caller.wait_time <= 3.5:
             averageWaitTimes[3] += 1
+            waitTimesPer15[int(caller.initial_time/dt)][3] += 1
         else:
             averageWaitTimes[4] += 1
+            waitTimesPer15[int(caller.initial_time/dt)][4] += 1
 print("Total callers: %d\n" % callerCount)
+
+loopCount = 0
+for entry in waitTimesPer15:
+    for i in range(len(entry)):
+        entry[i] = entry[i] / len(callersPer15[loopCount])
+    loopCount += 1
+waitData = {'<10': waitTimesPer15}
+df2 = pd.DataFrame(data=waitData, index=0)
+print(df2)
+
 
 # Bar Chart construction
 barChartBins = ('<10 seconds', '<2 minutes', '<3 minutes', '<3.5 minutes', '>5 minutes')
@@ -135,6 +152,7 @@ axs[0].title.set_text('Average Number of Callers')
 axs[1].title.set_text('Average Wait Time')
 axs[2].title.set_text('Standard Deviation of Wait Time')
 axs[3].title.set_text('Average Number of Servers')
+axs[4].title.set_text('Percentage of Callers with Specified Wait Times')
 
 fig.tight_layout()
 
