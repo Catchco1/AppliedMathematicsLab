@@ -56,6 +56,7 @@ filename = 'FormattedData2.csv'
 df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2'])
 maxServerStations = int(max(df['estimate']))
 maxTime = int(max(df['Time2']))
+numSimulations = 1
 print(maxServerStations)
 
 def simulate(num=10):
@@ -95,7 +96,7 @@ for i in range(int(maxTime/dt)):
     callersPer15.append([])
     waitTimesPer15.append([0,0,0,0,0])
 
-simulation = simulate(1)
+simulation = simulate(numSimulations)
 callerCount = 0
 for record in simulation: 
     for caller in record:
@@ -124,8 +125,8 @@ for entry in waitTimesPer15:
     for i in range(len(entry)):
         entry[i] = entry[i] / len(callersPer15[loopCount])
     loopCount += 1
-waitData = {'<10': waitTimesPer15}
-df2 = pd.DataFrame(data=waitData, index=0)
+waitData = {'<10': waitTimesPer15[0]}
+df2 = pd.DataFrame(data=waitData)
 print(df2)
 
 
@@ -135,25 +136,35 @@ y_pos = np.arange(len(barChartBins))
 averageWaitTimes = [waitTime / callerCount for waitTime in averageWaitTimes]
 
 # Plot the average wait time and standard deviation for the wait time for the simulation
-fig, axs =  plt.subplots(nrows=5, ncols=1)
-axs[0] = plt.subplot(5,1,1)
-axs[1] = plt.subplot(5,1,2)
-axs[2] = plt.subplot(5,1,3)
-axs[3] = plt.subplot(5,1,4)
-axs[4] = plt.subplot(5,1,5)
+# fig, axs =  plt.subplots(nrows=5, ncols=1)
+# axs[0] = plt.subplot(5,1,1)
+# axs[1] = plt.subplot(5,1,2)
+# axs[2] = plt.subplot(5,1,3)
+# axs[3] = plt.subplot(5,1,4)
+# axs[4] = plt.subplot(5,1,5)
 
-axs[0].plot([np.average(len(record)) for record in callersPer15], color='red')
-axs[1].plot([np.average(time) for time in wait_times], color = 'green')
-axs[2].plot([np.std(time) for time in wait_times])
-axs[3].plot([np.average(station) for station in df['estimate']], color = 'brown')
-axs[4].bar(barChartBins, averageWaitTimes)
+# axs[0].plot([len(record)/numSimulations for record in callersPer15], color='red')
+# axs[1].plot([np.average(time) for time in wait_times], color = 'green')
+# axs[2].plot([np.std(time) for time in wait_times])
+# axs[3].plot([np.average(station) for station in df['estimate']], color = 'brown')
+# axs[4].bar(barChartBins, averageWaitTimes)
 
-axs[0].title.set_text('Average Number of Callers')
-axs[1].title.set_text('Average Wait Time')
-axs[2].title.set_text('Standard Deviation of Wait Time')
-axs[3].title.set_text('Average Number of Servers')
-axs[4].title.set_text('Percentage of Callers with Specified Wait Times')
+# axs[0].title.set_text('Average Number of Callers')
+# axs[1].title.set_text('Average Wait Time')
+# axs[2].title.set_text('Standard Deviation of Wait Time')
+# axs[3].title.set_text('Average Number of Servers')
+# axs[4].title.set_text('Percentage of Callers with Specified Wait Times')
+plt.figure().suptitle('Average Number of Callers')
+plt.plot([len(record)/numSimulations for record in callersPer15], color='red')
+plt.figure().suptitle('Average Wait Time')
+plt.plot([np.average(time) for time in wait_times], color = 'green')
+plt.figure().suptitle('Standard Deviation of Wait Time')
+plt.plot([np.std(time) for time in wait_times])
+plt.figure().suptitle('Average Number of Servers')
+plt.plot([np.average(station) for station in df['estimate']], color = 'brown')
+plt.figure().suptitle('Percentage of Callers with Specified Wait Times')
+plt.bar(barChartBins, averageWaitTimes)
 
-fig.tight_layout()
+# fig.tight_layout()
 
 plt.show()
