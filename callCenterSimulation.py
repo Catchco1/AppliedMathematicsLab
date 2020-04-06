@@ -2,6 +2,7 @@ import numpy as np
 from numpy.random import exponential
 import matplotlib.pyplot as plt
 import pandas as pd
+import csv
 from math import e
 from collections import deque
 from operator import itemgetter
@@ -9,14 +10,14 @@ from operator import itemgetter
 def reservation_call_rate(t, df): # minutes between callers, on average
     averageCallers = df.loc[df['Time2'] <= t].iloc[-1]['Received'] / 15
     if(averageCallers == 0):
-        return(1/3)
+        return(15)
     else:
         return(1/averageCallers)
 
 def call_length_rate(t): # average length of call
     return(3)
 
-# These are nt being used yet
+# These are not being used yet
 # def late_call_rate(t): #prioritize these over the reservation line
 #     return(4.1)
 
@@ -56,7 +57,7 @@ filename = 'FormattedData2.csv'
 df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2'])
 maxServerStations = int(max(df['estimate']))
 maxTime = int(max(df['Time2']))
-numSimulations = 1
+numSimulations = 20
 print(maxServerStations)
 
 def simulate(num=10):
@@ -123,11 +124,15 @@ print("Total callers: %d\n" % callerCount)
 loopCount = 0
 for entry in waitTimesPer15:
     for i in range(len(entry)):
-        entry[i] = entry[i] / len(callersPer15[loopCount])
+        if(len(callersPer15[loopCount]) == 0):
+            entry[i] = 0
+        else:
+            entry[i] = entry[i] / len(callersPer15[loopCount]) * 100
     loopCount += 1
-waitData = {'<10': waitTimesPer15[0]}
-df2 = pd.DataFrame(data=waitData)
-print(df2)
+waitTimesPer15.insert(0,['<10 seconds', '<2 minutes', '<3 minutes', '<3.5 minutes', '>5 minutes'])
+with open('output.csv', 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerows(waitTimesPer15)
 
 
 # Bar Chart construction
