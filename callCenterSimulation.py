@@ -54,7 +54,7 @@ class Caller():
             bestServer.workingUntil = self.done_time
             
 filename = 'FormattedData2.csv'
-df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2'])
+df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2', 'X0.10sec', 'X11.120sec', 'X2.3min', 'X3.5min'])
 maxServerStations = int(max(df['estimate']))
 maxTime = int(max(df['Time2']))
 numSimulations = 20
