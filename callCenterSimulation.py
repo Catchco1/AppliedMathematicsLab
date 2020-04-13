@@ -54,10 +54,10 @@ class Caller():
             bestServer.workingUntil = self.done_time
             
 filename = 'FormattedData2.csv'
-df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2', 'X0.10sec', 'X11.120sec', 'X2.3min', 'X3.5min'])
+df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2', 'X0.10sec', 'X11.120sec', 'X2.3min', 'X3.5min', 'Over_5min'])
 maxServerStations = int(max(df['estimate']))
 maxTime = int(max(df['Time2']))
-numSimulations = 20
+numSimulations = 1
 print(maxServerStations)
 
 def simulate(num=10):
@@ -91,11 +91,13 @@ wait_times = []
 callersPer15 = []
 averageWaitTimes = [0,0,0,0,0]
 waitTimesPer15 = []
+absoluteValueDifference = []
 
 for i in range(int(maxTime/dt)):
     wait_times.append([])
     callersPer15.append([])
     waitTimesPer15.append([0,0,0,0,0])
+    absoluteValueDifference.append([0,0,0,0,0])
 
 simulation = simulate(numSimulations)
 callerCount = 0
@@ -121,6 +123,42 @@ for record in simulation:
             waitTimesPer15[int(caller.initial_time/dt)][4] += 1
 print("Total callers: %d\n" % callerCount)
 
+loopCount = 0
+for entry in absoluteValueDifference:
+    for i in range(len(entry)):
+        if i == 0: 
+            if(len(callersPer15[loopCount]) == 0):
+                entry[i] = abs(0 - df['X0.10sec'][loopCount])
+            else:
+                entry[i] = abs(waitTimesPer15[loopCount][i]/ len(callersPer15[loopCount]) * 100 - df['X0.10sec'][loopCount])
+        elif i == 1:
+            if(len(callersPer15[loopCount]) == 0):
+                entry[i] = abs(0 - df['X11.120sec'][loopCount])
+            else:
+                entry[i] = abs(waitTimesPer15[loopCount][i]/ len(callersPer15[loopCount]) * 100 - df['X11.120sec'][loopCount])
+        elif i == 2:
+            if(len(callersPer15[loopCount]) == 0):
+                entry[i] = abs(0 - df['X2.3min'][loopCount])
+            else:
+                entry[i] = abs(waitTimesPer15[loopCount][i]/ len(callersPer15[loopCount]) * 100 - df['X2.3min'][loopCount])
+        elif i == 3:
+            if(len(callersPer15[loopCount]) == 0):
+                entry[i] = abs(0 - df['X3.5min'][loopCount])
+            else:
+                entry[i] = abs(waitTimesPer15[loopCount][i]/ len(callersPer15[loopCount]) * 100 - df['X3.5min'][loopCount])
+        elif i == 4:
+            if(len(callersPer15[loopCount]) == 0):
+                entry[i] = abs(0 - df['Over_5min'][loopCount])
+            else:
+                entry[i] = abs(waitTimesPer15[loopCount][i]/ len(callersPer15[loopCount]) * 100 - df['Over_5min'][loopCount])
+    loopCount += 1
+
+absoluteValueDifference.insert(0,['<10 seconds', '<2 minutes', '<3 minutes', '<3.5 minutes', '>5 minutes'])
+with open('absoluteDifferenceOutput.csv', 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerows(absoluteValueDifference)
+
+print(absoluteValueDifference)
 loopCount = 0
 for entry in waitTimesPer15:
     for i in range(len(entry)):
@@ -169,7 +207,6 @@ plt.figure().suptitle('Average Number of Servers')
 plt.plot([np.average(station) for station in df['estimate']], color = 'brown')
 plt.figure().suptitle('Percentage of Callers with Specified Wait Times')
 plt.bar(barChartBins, averageWaitTimes)
-
 # fig.tight_layout()
 
 plt.show()
