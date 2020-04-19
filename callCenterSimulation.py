@@ -17,9 +17,9 @@ def reservation_call_rate(t, df): # minutes between callers, on average
 def call_length_rate(t): # average length of call
     return(3)
 
-# These are not being used yet
-# def late_call_rate(t): #prioritize these over the reservation line
-#     return(4.1)
+def late_call_length_rate(t):
+    return(4.1)
+
 
 # The likelihood that a caller drops the call because there are too many people ahead of them. This is not currently being used
 # def walkoutProb(onHoldQueueLength): 
@@ -28,8 +28,11 @@ def call_length_rate(t): # average length of call
 #     else:
 #         return False
 
-def assignServerStations(t, df):
+def assignReservationServerStations(t, df):
     return df.loc[df['Time2'] <= t].iloc[-1]['estimate']
+
+def assignLateServerStations(t, df):
+    return df.loc[df['Time2'] <= t].iloc[-1]['optimized']
 
 class Server():
     def __init__(self, station):
@@ -57,7 +60,7 @@ filename = 'FormattedData2.csv'
 df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2', 'X0.10sec', 'X11.120sec', 'X2.3min', 'X3.5min', 'Over_5min'])
 maxServerStations = int(max(df['estimate']))
 maxTime = int(max(df['Time2']))
-numSimulations = 1
+numSimulations = 20
 print(maxServerStations)
 
 def simulate(num=10):
@@ -71,13 +74,13 @@ def simulate(num=10):
         for j in range(maxServerStations):
             serverList.append(Server(j))
         #Add the first caller to a list to keep track of all the callers in this simulation
-        numAvailableServerStations = assignServerStations(time, df)
+        numAvailableServerStations = assignReservationServerStations(time, df)
         callers = [Caller(time,'NULL', serverList, numAvailableServerStations)]
         while time < maxTime:
             #Advance time only when a new caller calls in
             time += exponential(reservation_call_rate(time, df))
             if time < maxTime:
-                numAvailableServerStations = assignServerStations(time, df)
+                numAvailableServerStations = assignReservationServerStations(time, df)
                 caller = Caller(time,callers[-1], serverList, numAvailableServerStations)
                 callers.append(caller)
         
@@ -97,7 +100,7 @@ for i in range(int(maxTime/dt)):
     wait_times.append([])
     callersPer15.append([])
     waitTimesPer15.append([0,0,0,0,0])
-    absoluteValueDifference.append([0,0,0,0,0])
+    absoluteValueDifference.append([0,0,0,0,0,0])
 
 simulation = simulate(numSimulations)
 callerCount = 0
@@ -115,7 +118,7 @@ for record in simulation:
         elif caller.wait_time <= 3:
             averageWaitTimes[2] += 1
             waitTimesPer15[int(caller.initial_time/dt)][2] += 1
-        elif caller.wait_time <= 3.5:
+        elif caller.wait_time <= 5:
             averageWaitTimes[3] += 1
             waitTimesPer15[int(caller.initial_time/dt)][3] += 1
         else:
@@ -125,7 +128,7 @@ print("Total callers: %d\n" % callerCount)
 
 loopCount = 0
 for entry in absoluteValueDifference:
-    for i in range(len(entry)):
+    for i in range(5):
         if i == 0: 
             if(len(callersPer15[loopCount]) == 0):
                 entry[i] = abs(0 - df['X0.10sec'][loopCount])
@@ -151,14 +154,14 @@ for entry in absoluteValueDifference:
                 entry[i] = abs(0 - df['Over_5min'][loopCount])
             else:
                 entry[i] = abs(waitTimesPer15[loopCount][i]/ len(callersPer15[loopCount]) * 100 - df['Over_5min'][loopCount])
+        entry[5] += entry[i]
     loopCount += 1
 
-absoluteValueDifference.insert(0,['<10 seconds', '<2 minutes', '<3 minutes', '<3.5 minutes', '>5 minutes'])
+absoluteValueDifference.insert(0,['<10 seconds', '<2 minutes', '<3 minutes', '<5 minutes', '>5 minutes', 'Total difference'])
 with open('absoluteDifferenceOutput.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerows(absoluteValueDifference)
 
-print(absoluteValueDifference)
 loopCount = 0
 for entry in waitTimesPer15:
     for i in range(len(entry)):
@@ -167,14 +170,14 @@ for entry in waitTimesPer15:
         else:
             entry[i] = entry[i] / len(callersPer15[loopCount]) * 100
     loopCount += 1
-waitTimesPer15.insert(0,['<10 seconds', '<2 minutes', '<3 minutes', '<3.5 minutes', '>5 minutes'])
+waitTimesPer15.insert(0,['<10 seconds', '<2 minutes', '<3 minutes', '<5 minutes', '>5 minutes'])
 with open('output.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerows(waitTimesPer15)
 
 
 # Bar Chart construction
-barChartBins = ('<10 seconds', '<2 minutes', '<3 minutes', '<3.5 minutes', '>5 minutes')
+barChartBins = ('<10 seconds', '<2 minutes', '<3 minutes', '<5 minutes', '>5 minutes')
 y_pos = np.arange(len(barChartBins))
 averageWaitTimes = [waitTime / callerCount for waitTime in averageWaitTimes]
 
