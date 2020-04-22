@@ -55,6 +55,16 @@ class Caller():
             self.wait_time = bestServer.workingUntil - time
             self.done_time = self.initial_time + self.wait_time + self.call_time
             bestServer.workingUntil = self.done_time
+        if(self.wait_time < 0.167):
+            self.wait_class = 0
+        elif(self.wait_time < 2):
+            self.wait_class = 1
+        elif(self.wait_time < 3):
+            self.wait_class = 2
+        elif(self.wait_time < 5):
+            self.wait_class = 3
+        else:
+            self.wait_class = 4
             
 filename = 'FormattedData2.csv'
 df = pd.read_csv(filename, usecols = ['Received','estimate', 'Time2', 'X0.10sec', 'X11.120sec', 'X2.3min', 'X3.5min', 'Over_5min'])
@@ -95,12 +105,34 @@ callersPer15 = []
 averageWaitTimes = [0,0,0,0,0]
 waitTimesPer15 = []
 absoluteValueDifference = []
+lessThanTenSecs = []
+tenSecSD = []
+lessThanTwoMin = []
+twoMinSD = []
+lessThanThreeMin = []
+threeMinSD = []
+lessThanFiveMin = []
+fiveMinSD = []
+greaterThanFiveMin = []
+greaterThanFiveMinSD = []
+waitClasses = []
 
 for i in range(int(maxTime/dt)):
     wait_times.append([])
     callersPer15.append([])
     waitTimesPer15.append([0,0,0,0,0])
     absoluteValueDifference.append([0,0,0,0,0,0])
+    waitClasses.append([])
+    lessThanTenSecs.append([])
+    tenSecSD.append(0)
+    lessThanTwoMin.append([])
+    twoMinSD.append(0)
+    lessThanThreeMin.append([])
+    threeMinSD.append(0)
+    lessThanFiveMin.append([])
+    fiveMinSD.append(0)
+    greaterThanFiveMin.append([])
+    greaterThanFiveMinSD.append(0)
 
 simulation = simulate(numSimulations)
 callerCount = 0
@@ -109,6 +141,7 @@ for record in simulation:
         callerCount += 1
         wait_times[int(caller.initial_time/dt)].append(caller.wait_time)
         callersPer15[int(caller.initial_time/dt)].append(caller)
+        waitClasses[int(caller.initial_time/dt)].append(caller.wait_class)
         if caller.wait_time <= 0.167:
             averageWaitTimes[0] += 1
             waitTimesPer15[int(caller.initial_time/dt)][0] += 1
@@ -124,7 +157,44 @@ for record in simulation:
         else:
             averageWaitTimes[4] += 1
             waitTimesPer15[int(caller.initial_time/dt)][4] += 1
+    for index,interval in enumerate(waitClasses):
+        if(len(callersPer15[index]) == 0):
+            lessThanTenSecs[index].append(0)
+        else:
+            lessThanTenSecs[index].append((interval.count(0) / len(callersPer15[index])) * 100)
+            lessThanTwoMin[index].append((interval.count(1) / len(callersPer15[index])) * 100)
+            lessThanThreeMin[index].append((interval.count(2) / len(callersPer15[index])) * 100)
+            lessThanFiveMin[index].append((interval.count(3) / len(callersPer15[index])) * 100)
+            greaterThanFiveMin[index].append((interval.count(4) / len(callersPer15[index])) * 100)
 print("Total callers: %d\n" % callerCount)
+
+for index,interval in enumerate(lessThanTenSecs):
+    sd = np.std(interval)
+    avg = np.average(interval)
+    if(df['X0.10sec'][index] >= (avg - sd) and df['X0.10sec'][index] <= (avg + sd)):
+        tenSecSD[index] = 1
+for index,interval in enumerate(lessThanTwoMin):
+    sd = np.std(interval)
+    avg = np.average(interval)
+    if(df['X11.120sec'][index] >= (avg - sd) and df['X11.120sec'][index] <= (avg + sd)):
+        twoMinSD[index] = 1
+for index,interval in enumerate(lessThanThreeMin):
+    sd = np.std(interval)
+    avg = np.average(interval)
+    if(df['X2.3min'][index] >= (avg - sd) and df['X2.3min'][index] <= (avg + sd)):
+        threeMinSD[index] = 1
+for index,interval in enumerate(lessThanFiveMin):
+    sd = np.std(interval)
+    avg = np.average(interval)
+    if(df['X3.5min'][index] >= (avg - sd) and df['X3.5min'][index] <= (avg + sd)):
+        fiveMinSD[index] = 1
+for index,interval in enumerate(greaterThanFiveMin):
+    sd = np.std(interval)
+    avg = np.average(interval)
+    if(df['Over_5min'][index] >= (avg - sd) and df['Over_5min'][index] <= (avg + sd)):
+        greaterThanFiveMinSD[index] = 1
+
+standardDeviationResults = [list(row) for row in zip(tenSecSD, twoMinSD, threeMinSD, fiveMinSD, greaterThanFiveMinSD)]
 
 loopCount = 0
 for entry in absoluteValueDifference:
@@ -161,6 +231,11 @@ absoluteValueDifference.insert(0,['<10 seconds', '<2 minutes', '<3 minutes', '<5
 with open('absoluteDifferenceOutput.csv', 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerows(absoluteValueDifference)
+
+standardDeviationResults.insert(0,['<10 seconds', '<2 minutes', '<3 minutes', '<5 minutes', '>5 minutes'])
+with open('standardDeviationOutput.csv', 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerows(standardDeviationResults)
 
 loopCount = 0
 for entry in waitTimesPer15:
