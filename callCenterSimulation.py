@@ -3,6 +3,7 @@ from numpy.random import exponential
 import matplotlib.pyplot as plt
 import pandas as pd
 import csv
+import random
 from math import e
 from collections import deque
 from operator import itemgetter
@@ -116,6 +117,7 @@ fiveMinSD = []
 greaterThanFiveMin = []
 greaterThanFiveMinSD = []
 waitClasses = []
+over5MinSuccessChecks = [[],[],[],[],[],[],[],[],[],[]]
 
 for i in range(int(maxTime/dt)):
     wait_times.append([])
@@ -136,11 +138,18 @@ for i in range(int(maxTime/dt)):
 
 simulation = simulate(numSimulations)
 callerCount = 0
+testingIntervals = [107, 108, 165, 167, 209, 218, 232, 233, 241, 254]
+
 for record in simulation: 
+    numOver5MinInTestIntervals = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    callersPer15PerSim = []
+    for i in range(int(maxTime / dt)):
+        callersPer15PerSim.append([])
     for caller in record:
         callerCount += 1
         wait_times[int(caller.initial_time/dt)].append(caller.wait_time)
         callersPer15[int(caller.initial_time/dt)].append(caller)
+        callersPer15PerSim[int(caller.initial_time/dt)].append(caller)
         waitClasses[int(caller.initial_time/dt)].append(caller.wait_class)
         if caller.wait_time <= 0.167:
             averageWaitTimes[0] += 1
@@ -157,6 +166,12 @@ for record in simulation:
         else:
             averageWaitTimes[4] += 1
             waitTimesPer15[int(caller.initial_time/dt)][4] += 1
+            for index,interval in enumerate(testingIntervals):
+                if int(caller.initial_time / dt) == interval:
+                    numOver5MinInTestIntervals[index] += 1
+    for index,interval in enumerate(testingIntervals):
+        over5MinSuccessChecks[index].append(numOver5MinInTestIntervals[index] / len(callersPer15PerSim[interval]))
+
     for index,interval in enumerate(waitClasses):
         if(len(callersPer15[index]) == 0):
             lessThanTenSecs[index].append(0)
@@ -167,6 +182,7 @@ for record in simulation:
             lessThanFiveMin[index].append((interval.count(3) / len(callersPer15[index])) * 100)
             greaterThanFiveMin[index].append((interval.count(4) / len(callersPer15[index])) * 100)
 print("Total callers: %d\n" % callerCount)
+print(over5MinSuccessChecks)
 
 for index,interval in enumerate(lessThanTenSecs):
     sd = np.std(interval)
@@ -256,6 +272,9 @@ barChartBins = ('<10 seconds', '<2 minutes', '<3 minutes', '<5 minutes', '>5 min
 y_pos = np.arange(len(barChartBins))
 averageWaitTimes = [waitTime / callerCount for waitTime in averageWaitTimes]
 
+# Histogram Construction
+n_bins = 10
+
 # Plot the average wait time and standard deviation for the wait time for the simulation
 # fig, axs =  plt.subplots(nrows=5, ncols=1)
 # axs[0] = plt.subplot(5,1,1)
@@ -285,6 +304,14 @@ plt.figure().suptitle('Average Number of Servers')
 plt.plot([np.average(station) for station in df['estimate']], color = 'brown')
 plt.figure().suptitle('Percentage of Callers with Specified Wait Times')
 plt.bar(barChartBins, averageWaitTimes)
+# plt.figure().suptitle('Histogram of particular interval over 5 minutes')
+# plt.hist(over5MinSuccessCheck1, bins = n_bins)
+# plt.figure().suptitle('Histogram of particular interval over 5 minutes')
+# plt.hist(over5MinSuccessCheck1, bins = n_bins)
+
+for index,interval in enumerate(over5MinSuccessChecks):
+    plt.figure().suptitle('Histogram of %d interval over 5 minutes' % (testingIntervals[index]))
+    plt.hist(over5MinSuccessChecks[index], bins = n_bins)
 # fig.tight_layout()
 
 plt.show()
